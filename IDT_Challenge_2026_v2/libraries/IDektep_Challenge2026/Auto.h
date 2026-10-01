@@ -15,8 +15,14 @@ void Backward();
 void Turn_Left();
 void Turn_Right();
 
+void Slide_left();
+void Slide_right();
+
 void Slide_left_front();
 void Slide_right_front();
+
+void Slide_left_back();
+void Slide_right_back();
 
 void Stop();
 
