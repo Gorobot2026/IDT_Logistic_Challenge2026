@@ -2,6 +2,7 @@
 #include "Motor.h"
 #include "Auto.h"
 #include "Sensors.h"
+#include <Arduino.h>
 #include <Arduino_JSON.h>
 
 WARC warcInstance;
@@ -18,12 +19,48 @@ JSONVar readings;
 
 void autoRun()
 {
-  // ---------- เริ่มเขียนโปรแกรมรถอัตโนมัติตรงนี้ ----------
-  Forward();     // เดินหน้า
-  delay(1000);           // หน่วงเวลา 1000 มิลลิวินาที = 1 วินาที
+ 
+  // ---------- move Blum Pust Button  for Release the ball.----------
+   Forward();     
+  delay(1500);
+  Stop();
+  delay(520);
+  Turn_Right();
+  delay(450);
+  
+}
 
-  Stop();          // สั่งหยุดรถเมื่อทำงานครบตามโปรแกรมแล้ว
-  // ---------- จบโปรแกรมรถอัตโนมัติ ----------
+// =====================================================================================
+// ส่วนนี้ไม่ต้องแก้ : รัน autoRun() ในอีก task หนึ่ง เพื่อไม่ให้ delay() ไปบล็อกระบบ WiFi/WebSocket
+// (ถ้า delay นานเกิน 5 วินาทีใน callback ของ WebSocket ESP32 จะ reset ตัวเอง)
+// =====================================================================================
+static volatile bool autoRunning = false;
+static TaskHandle_t  autoHandle  = NULL;
+
+static void autoTask(void *)
+{
+  autoRun();            // <-- เรียกฟังก์ชัน autoRun() ด้านบนตามปกติ
+  Stop();
+  autoHandle  = NULL;
+  autoRunning = false;
+  vTaskDelete(NULL);
+}
+
+static void startAutoRun()
+{
+  if (autoRunning) return;   // กันกดซ้ำตอนกำลังรัน
+  autoRunning = true;
+  xTaskCreate(autoTask, "autoRun", 4096, NULL, 1, &autoHandle);
+}
+
+static void cancelAutoRun()
+{
+  TaskHandle_t h = autoHandle;
+  if (autoRunning && h != NULL) {
+    vTaskDelete(h);          // หยุด Auto กลางคัน
+    autoHandle  = NULL;
+    autoRunning = false;
+  }
 }
 
 const char *WARC::getHtmlHomePage()
@@ -419,6 +456,7 @@ void WARC::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client
 }
 
 void WARC::processCarMovement(int inputValue) {
+  if (inputValue != AUTO_MODE) cancelAutoRun();   // กดปุ่มอื่น/หลุดการเชื่อมต่อ = หยุด Auto
   switch (inputValue) {
     case UP:
       Motor::forward();
@@ -451,7 +489,7 @@ void WARC::processCarMovement(int inputValue) {
       Motor::turn_right();
       break;
     case AUTO_MODE:
-      autoRun();     // <-- เมื่อกดปุ่ม Auto จะมาเรียกฟังก์ชันนี้ (เขียนไว้ด้านบนของไฟล์นี้)
+      startAutoRun();   // <-- เมื่อกดปุ่ม Auto จะเริ่ม autoRun() (เขียนไว้ด้านบนของไฟล์นี้)
       break;
     case STOP:
       Motor::stop();
