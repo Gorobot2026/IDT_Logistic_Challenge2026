@@ -20,7 +20,7 @@ JSONVar readings;
 void autoRun()
 {
  
-  // ---------- move Blum Pust Button  for Release the ball.----------
+  // ----------For Write Auto----------
    Forward();     
   delay(1500);
   Stop();
@@ -30,10 +30,7 @@ void autoRun()
   
 }
 
-// =====================================================================================
-// ส่วนนี้ไม่ต้องแก้ : รัน autoRun() ในอีก task หนึ่ง เพื่อไม่ให้ delay() ไปบล็อกระบบ WiFi/WebSocket
-// (ถ้า delay นานเกิน 5 วินาทีใน callback ของ WebSocket ESP32 จะ reset ตัวเอง)
-// =====================================================================================
+
 static volatile bool autoRunning = false;
 static TaskHandle_t  autoHandle  = NULL;
 
