@@ -36,7 +36,7 @@ void Slide_right_front() {
 }
 
 void Slide_left_back() {
-  Motor::slide_left_back()();
+  Motor::slide_left_back();
 }
 
 void Slide_right_back() {
